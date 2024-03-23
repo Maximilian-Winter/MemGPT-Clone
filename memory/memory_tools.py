@@ -154,7 +154,7 @@ class AgentCoreMemory:
             core_memory = {}
 
         self.core_memory_manager = CoreMemoryManager(core_memory)
-        if self.core_memory_manager is not None:
+        if core_memory_file is not None:
             self.core_memory_manager.load(core_memory_file)
 
         self.add_core_memory_tool = LlamaCppFunctionTool(core_memory_append,
@@ -187,18 +187,23 @@ class AgentCoreMemory:
 
 
 class AgentEventMemory:
-    def __init__(self, db_path='sqlite:///events.db'):
+    def __init__(self, event_queue_file=None, db_path='sqlite:///events.db'):
         self.engine = create_engine(db_path)
         session_factory = sessionmaker(bind=self.engine)
         Base.metadata.create_all(self.engine)
         self.Session = scoped_session(session_factory)
         self.session = self.Session()
         self.event_memory_manager = EventMemoryManager(self.session)
+
+        if event_queue_file is not None:
+            self.event_memory_manager.load_event_queue(event_queue_file)
         self.search_event_memory_manager_tool = LlamaCppFunctionTool(conversation_search,
                                                                      event_memory_manager=self.event_memory_manager)
 
         self.search_event_memory_manager_tool_date = LlamaCppFunctionTool(conversation_search_date,
                                                                      event_memory_manager=self.event_memory_manager)
+
+
 
     def get_event_memory_manager(self):
         return self.event_memory_manager

@@ -108,10 +108,10 @@ class activate_message_mode(BaseModel):
 
         result = agent.llama_cpp_agent.get_chat_response(system_prompt=system_prompt, role="assistant",
                                                          # function_tool_registry=agent.function_tool_registry,
-                                                         grammar=message_grammar,
+                                                         # grammar=message_grammar,
                                                          additional_stop_sequences=["<|endoftext|>"],
                                                          n_predict=1024,
-                                                         temperature=0.45, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
+                                                         temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
                                                          min_p=0.1, tfs_z=0.975, penalize_nl=False)
 
         print("Message: " + result)
@@ -122,7 +122,9 @@ class MiniMemGptAgent:
 
     def __init__(self, llama_llm: Union[Llama, LlamaLLMSettings, LlamaCppEndpointSettings, OpenAIEndpointSettings],
                  llama_generation_settings: Union[
-                     LlamaLLMGenerationSettings, LlamaCppGenerationSettings, OpenAIGenerationSettings] = None,
+                 LlamaLLMGenerationSettings, LlamaCppGenerationSettings, OpenAIGenerationSettings] = None,
+                 core_memory_file: str = None,
+                 event_queue_file: str = None,
                  messages_formatter_type: MessagesFormatterType = MessagesFormatterType.CHATML,
                  custom_messages_formatter: MessagesFormatter = None,
                  streaming_callback: Callable[[StreamingResponse], None] = None,
@@ -167,9 +169,17 @@ class MiniMemGptAgent:
         function_tools = [
             LlamaCppFunctionTool(activate_message_mode, add_outer_request_heartbeat_field=False, agent=self)]
 
-        self.core_memory = AgentCoreMemory(core_memory_file="core_memory.json")
+        if core_memory_file is not None:
+            self.core_memory = AgentCoreMemory(core_memory_file=core_memory_file)
+        else:
+            self.core_memory = AgentCoreMemory(core_memory={})
+
+        if event_queue_file is not None:
+            self.event_memory = AgentEventMemory(event_queue_file=event_queue_file)
+        else:
+            self.event_memory = AgentEventMemory()
+
         self.retrieval_memory = AgentRetrievalMemory()
-        self.event_memory = AgentEventMemory()
 
         function_tools.extend(self.core_memory.get_tool_list())
         function_tools.extend(self.retrieval_memory.get_tool_list())
@@ -203,7 +213,7 @@ class MiniMemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.45, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
+                                                        temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
                                                         min_p=0.1, tfs_z=0.975, penalize_nl=False )
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
@@ -232,7 +242,7 @@ class MiniMemGptAgent:
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.45, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
+                                                                temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
                                                                 min_p=0.1, tfs_z=0.975, penalize_nl=False )
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                                 self.llama_cpp_agent.last_response, {})
@@ -253,3 +263,7 @@ class MiniMemGptAgent:
             self.send_message_to_user_callback(message)
         else:
             print(message)
+
+    def save(self, core_memory_file: str = "core_memory.json", event_queue_file: str = "event_queue.json"):
+        self.core_memory.get_core_memory_manager().save(filepath=core_memory_file)
+        self.event_memory.get_event_memory_manager().save_event_queue(filepath=event_queue_file)

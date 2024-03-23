@@ -5,8 +5,10 @@ from mini_memgpt_agent import MiniMemGptAgent
 main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1:8080/completion")
 
 
-llama_cpp_agent = MiniMemGptAgent(main_model, debug_output=True, messages_formatter_type=MessagesFormatterType.CHATML)
+mem_gpt_agent = MiniMemGptAgent(main_model, debug_output=True, core_memory_file="core_memory.json", messages_formatter_type=MessagesFormatterType.CHATML)
 
 while True:
     user_input = input(">")
-    llama_cpp_agent.get_response(user_input)
+
+    mem_gpt_agent.get_response(user_input)
+    mem_gpt_agent.save()
