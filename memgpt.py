@@ -1,6 +1,6 @@
 from llama_cpp_agent.messages_formatter import MessagesFormatterType
 from llama_cpp_agent.providers.llama_cpp_endpoint_provider import LlamaCppEndpointSettings
-from mini_memgpt_agent import MemGptAgent
+from memgpt_agent import MemGptAgent
 
 main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1:8080/completion")
 
