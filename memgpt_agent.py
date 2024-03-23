@@ -109,20 +109,22 @@ class activate_message_mode(BaseModel):
         result = agent.llama_cpp_agent.get_chat_response(system_prompt=system_prompt, role="assistant",
                                                          # function_tool_registry=agent.function_tool_registry,
                                                          # grammar=message_grammar,
+                                                         streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["<|endoftext|>"],
                                                          n_predict=1024,
-                                                         temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
+                                                         temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1,
+                                                         repeat_last_n=512,
                                                          min_p=0.1, tfs_z=0.975, penalize_nl=False)
 
         print("Message: " + result)
-
+        agent.send_message_to_user(result)
 
 
 class MemGptAgent:
 
     def __init__(self, llama_llm: Union[Llama, LlamaLLMSettings, LlamaCppEndpointSettings, OpenAIEndpointSettings],
                  llama_generation_settings: Union[
-                 LlamaLLMGenerationSettings, LlamaCppGenerationSettings, OpenAIGenerationSettings] = None,
+                     LlamaLLMGenerationSettings, LlamaCppGenerationSettings, OpenAIGenerationSettings] = None,
                  core_memory_file: str = None,
                  event_queue_file: str = None,
                  messages_formatter_type: MessagesFormatterType = MessagesFormatterType.CHATML,
@@ -210,11 +212,13 @@ class MemGptAgent:
              "imb_count": len(query)}).strip()
 
         result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
+                                                        streaming_callback=self.streaming_callback,
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
-                                                        min_p=0.1, tfs_z=0.975, penalize_nl=False )
+                                                        temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1,
+                                                        repeat_last_n=512,
+                                                        min_p=0.1, tfs_z=0.975, penalize_nl=False)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
@@ -222,11 +226,13 @@ class MemGptAgent:
             if not isinstance(result[0], str):
                 if result[0]["function"] != "activate_message_mode":
                     message_dict = [{"function": result[0]["function"], "return_value": result[0]["return_value"],
-                                    "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}]
-                    self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, message_dict, {})
+                                     "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}]
+                    self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage,
+                                                                                    message_dict, {})
             else:
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
-            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0]["request_heartbeat"]:
+            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0][
+                "request_heartbeat"]:
                 messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
 
                 self.llama_cpp_agent.messages = messages
@@ -239,18 +245,19 @@ class MemGptAgent:
                      "imb_count": len(query)}).strip()
 
                 result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
+                                                                streaming_callback=self.streaming_callback,
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1, repeat_last_n=512,
-                                                                min_p=0.1, tfs_z=0.975, penalize_nl=False )
+                                                                temperature=0.65, top_k=40, top_p=0.85,
+                                                                repeat_penalty=1.1, repeat_last_n=512,
+                                                                min_p=0.1, tfs_z=0.975, penalize_nl=False)
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                                 self.llama_cpp_agent.last_response, {})
             elif not isinstance(result[0], str):
                 break
             else:
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
-
 
     def send_message_to_user(self, message: str):
         """
