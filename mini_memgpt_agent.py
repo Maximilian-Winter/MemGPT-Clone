@@ -118,7 +118,7 @@ class activate_message_mode(BaseModel):
 
 
 
-class MiniMemGptAgent:
+class MemGptAgent:
 
     def __init__(self, llama_llm: Union[Llama, LlamaLLMSettings, LlamaCppEndpointSettings, OpenAIEndpointSettings],
                  llama_generation_settings: Union[
