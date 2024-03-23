@@ -11,4 +11,4 @@ while True:
     user_input = input(">")
 
     mem_gpt_agent.get_response(user_input)
-    mem_gpt_agent.save()
+    # mem_gpt_agent.save()
