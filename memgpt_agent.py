@@ -112,11 +112,11 @@ class activate_message_mode(BaseModel):
                                                          streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["<|endoftext|>"],
                                                          n_predict=1024,
-                                                         temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1,
+                                                         temperature=0.45, top_k=60, top_p=0.85, repeat_penalty=1.1,
                                                          repeat_last_n=512,
                                                          min_p=0.1, tfs_z=0.975, penalize_nl=False)
 
-        print("Message: " + result)
+        # print("Message: " + result)
         agent.send_message_to_user(result)
 
 
@@ -216,7 +216,7 @@ class MemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.65, top_k=40, top_p=0.85, repeat_penalty=1.1,
+                                                        temperature=0.45, top_k=60, top_p=0.85, repeat_penalty=1.1,
                                                         repeat_last_n=512,
                                                         min_p=0.1, tfs_z=0.975, penalize_nl=False)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
@@ -249,7 +249,7 @@ class MemGptAgent:
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.65, top_k=40, top_p=0.85,
+                                                                temperature=0.45, top_k=60, top_p=0.85,
                                                                 repeat_penalty=1.1, repeat_last_n=512,
                                                                 min_p=0.1, tfs_z=0.975, penalize_nl=False)
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,

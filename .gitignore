@@ -3,3 +3,4 @@
 events.db
 /memory/__pycache__
 /retrieval_memory
+event_queue.json

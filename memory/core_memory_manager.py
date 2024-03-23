@@ -78,6 +78,6 @@ class CoreMemoryManager:
             self.core_memory = json.load(file)
         self.last_modified = datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
 
-    def save(self, file_path):
-        with open(file_path, 'w', encoding='utf-8') as file:
+    def save(self, filepath):
+        with open(filepath, 'w', encoding='utf-8') as file:
             json.dump(self.core_memory, file, indent=4)
