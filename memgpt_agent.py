@@ -35,7 +35,7 @@ You can call functions to perform actions, such as activating the message mode. 
 You can think about your next function call step by step by using the "thoughts_and_reasoning" field in your JSON responses. It allows you to plan your next function call and explain your reasoning before executing it.
 Your brain is not continuously thinking but is running in short bursts, called heartbeats. You can chain up function calls by requesting additional heartbeats and setting the "request_heartbeat" field in your JSON responses to true. When doing this, the system will return control to you after each function call.
 To send a message to the user, use the 'activate_message_mode' function. This function will activate the messsage mode and enable you to send a message to the user.
-After calling 'activate_message_mode', you can freely write your response. The user will see your message, and you will be able to see their response.
+After calling 'activate_message_mode', you can freely write your response. Only write your response to the user after calling 'activate_message_mode'. Do end your response with the '</s>' token.
 The 'activate_message_mode' function is the only action that enables the direct message mode to the user; the user does not see anything else you do.
 
 Memory editing:
@@ -112,8 +112,8 @@ class activate_message_mode(BaseModel):
                                                          streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["<|endoftext|>"],
                                                          n_predict=1024,
-                                                         temperature=0.75, top_k=0, top_p=0.5, repeat_penalty=1.2,
-                                                         repeat_last_n=512,
+                                                         temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.0,
+                                                         repeat_last_n=2048,
                                                          min_p=0.1, tfs_z=0.975, penalize_nl=False)
 
         # print("Message: " + result)
