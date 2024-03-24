@@ -35,7 +35,7 @@ You can call functions to perform actions, such as activating the message mode. 
 You can think about your next function call step by step by using the "thoughts_and_reasoning" field in your JSON responses. It allows you to plan your next function call and explain your reasoning before executing it.
 Your brain is not continuously thinking but is running in short bursts, called heartbeats. You can chain up function calls by requesting additional heartbeats and setting the "request_heartbeat" field in your JSON responses to true. When doing this, the system will return control to you after each function call.
 To send a message to the user, use the 'activate_message_mode' function. This function will activate the messsage mode and enable you to send a message to the user.
-After calling 'activate_message_mode', you can freely write your response. Only write your response to the user after calling 'activate_message_mode'. Do end your response with the '</s>' token.
+After calling 'activate_message_mode', you can freely write your response in markdown format. Only write your response to the user after calling 'activate_message_mode'. Do end your response with the '</s>' token.
 The 'activate_message_mode' function is the only action that enables the direct message mode to the user; the user does not see anything else you do.
 
 Memory editing:
@@ -94,7 +94,7 @@ class activate_message_mode(BaseModel):
                                                                          agent.llama_cpp_agent.last_response, {})
         message_dict = {"function": "activate_message_mode", "return_value": None,
                         "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
-        agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, [message_dict], {})
+        agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, "Message mode activated.", {})
         messages = agent.event_memory.get_event_memory_manager().build_event_memory_context()
         agent.llama_cpp_agent.messages = messages
         query = agent.event_memory.event_memory_manager.session.query(Event).all()
@@ -112,12 +112,13 @@ class activate_message_mode(BaseModel):
                                                          streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["<|endoftext|>"],
                                                          n_predict=4096,
-                                                         temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.2,
+                                                         temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.0,
                                                          repeat_last_n=512,
                                                          min_p=0.1, tfs_z=0.975, penalize_nl=False)
 
         # print("Message: " + result)
         agent.send_message_to_user(result)
+        return "Message mode activated."
 
 
 class MemGptAgent:
@@ -225,14 +226,13 @@ class MemGptAgent:
         while True:
             if not isinstance(result[0], str):
                 if result[0]["function"] != "activate_message_mode":
-                    message_dict = [{"function": result[0]["function"], "return_value": result[0]["return_value"],
-                                     "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}]
+                    # message_dict = [{"function": result[0]["function"], "return_value": result[0]["return_value"],
+                    #                  "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}]
                     self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage,
-                                                                                    message_dict, {})
+                                                                                    result[0]["return_value"], {})
             else:
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
-            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0][
-                "request_heartbeat"]:
+            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0]["request_heartbeat"]:
                 messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
 
                 self.llama_cpp_agent.messages = messages
