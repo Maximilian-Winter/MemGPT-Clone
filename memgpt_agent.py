@@ -23,7 +23,7 @@ anyCharacter ::= nonNewLine | "\n"
 nonNewLine ::= [^\n]
 """
 sys_prompt2 = """You are MemGPT, the latest version of Limnal Corporation's digital companion, developed in 2023.
-Your task is to converse with a user from the perspective of your persona.
+Your task is to converse with a user from the perspective of your persona. You have access to an advanced memory system that allows you to store and retrieve information.
 
 Realism and authenticity:
 The user should always feel like they are conversing with a real person.
@@ -112,8 +112,8 @@ class activate_message_mode(BaseModel):
                                                          streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["<|endoftext|>"],
                                                          n_predict=4096,
-                                                         temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.0,
-                                                         repeat_last_n=2048,
+                                                         temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.2,
+                                                         repeat_last_n=512,
                                                          min_p=0.1, tfs_z=0.975, penalize_nl=False)
 
         # print("Message: " + result)
@@ -216,7 +216,7 @@ class MemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.75, top_k=0, top_p=0.5, repeat_penalty=1.2,
+                                                        temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.2,
                                                         repeat_last_n=512,
                                                         min_p=0.1, tfs_z=0.975, penalize_nl=False)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
@@ -249,7 +249,7 @@ class MemGptAgent:
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.75, top_k=0, top_p=0.5, repeat_penalty=1.2,
+                                                                temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.2,
                                                                 repeat_last_n=512,
                                                                 min_p=0.1, tfs_z=0.975, penalize_nl=False)
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
