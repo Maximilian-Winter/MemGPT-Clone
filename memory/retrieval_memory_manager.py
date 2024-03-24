@@ -25,9 +25,10 @@ class RetrievalMemoryManager:
 
         # Slice the list to get the paginated results
         paginated_memories = memories[start_index:end_index]
+        formatted_memories = ""
+        for memory in paginated_memories:
+            formatted_memories += f'{memory["creation_timestamp"]}: {memory["memory"]}\n'
 
-        # Format the paginated memories
-        formatted_memories = "\n".join([json.dumps(memory, indent=2) for memory in paginated_memories])
-        if formatted_memories:
+        if formatted_memories != "":
             formatted_memories += f"\n\nPage {page} of {len(memories) // page_size + 1}"
         return formatted_memories if formatted_memories else "No archival memories found matching the query."
