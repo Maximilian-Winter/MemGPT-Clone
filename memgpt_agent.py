@@ -111,7 +111,7 @@ class activate_message_mode(BaseModel):
                                                          # grammar=message_grammar,
                                                          streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["<|endoftext|>"],
-                                                         n_predict=1024,
+                                                         n_predict=4096,
                                                          temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.0,
                                                          repeat_last_n=2048,
                                                          min_p=0.1, tfs_z=0.975, penalize_nl=False)
