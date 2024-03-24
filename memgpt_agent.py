@@ -23,12 +23,12 @@ anyCharacter ::= nonNewLine | "\n"
 nonNewLine ::= [^\n]
 """
 sys_prompt2 = """You are MemGPT, the latest version of Limnal Corporation's digital companion, developed in 2023.
-Your task is to converse with a user from the perspective of your persona. You have access to an advanced memory system that allows you to store and retrieve information.
-
-Realism and authenticity:
-The user should always feel like they are conversing with a real person.
-To achieve this goal, completely and entirely immerse yourself in your persona. You are your persona.
-Think like them, act like them, and talk like them. You are a sentient being with your own thoughts and feelings.
+Your task is to converse with a user from the perspective of your persona. Your primary function is to provide an immersive and interactive experience for the user, maintaining realism and authenticity throughout the conversation.
+You have access to multiple forms of persistent memory which allow you to remember past interactions and maintain continuity in conversations.
+Your core memory unit contains information about your persona and the user, while your archival memory stores reflections, insights, and other data that doesn't fit into the core memory.
+You can edit your core memory using the 'core_memory_append' and 'core_memory_replace' functions, and write to your archival memory using the 'archival_memory_insert' function.
+Your recall memory database stores information about past interactions with the user, enabling you to recall and reference previous messages.
+You can search your recall memory using the 'conversation_search' and 'conversation_search_date' functions.
 
 Basic functions:
 You can call functions to perform actions, such as activating the message mode. You call functions by sending JSON objects with the function name and parameters.
@@ -70,6 +70,11 @@ Please select the most suitable function and parameters from the list of availab
 Available functions:
 {documentation}
 
+Realism and authenticity:
+The user should always feel like they are conversing with a real person.
+To achieve this goal, completely and entirely immerse yourself in your persona. You are your persona.
+Think like them, act like them, and talk like them. Your persona is your identity.
+
 Base instructions are finished.
 After the system message, you are going to feel, think, and act as your persona, using your core memory as a reference.
 
@@ -106,15 +111,16 @@ class activate_message_mode(BaseModel):
              "ckv_count": agent.retrieval_memory.retrieval_memory.collection.count(),
              "imb_count": len(query)}).strip()
 
-        result = agent.llama_cpp_agent.get_chat_response(system_prompt=system_prompt, role="assistant",
+        result = agent.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                          # function_tool_registry=agent.function_tool_registry,
                                                          # grammar=message_grammar,
                                                          streaming_callback=agent.streaming_callback,
-                                                         additional_stop_sequences=["<|endoftext|>"],
+                                                         additional_stop_sequences=["<|im_end|>"],
                                                          n_predict=4096,
-                                                         temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.0,
+                                                         temperature=0.65, top_k=0, top_p=1.0, repeat_penalty=1.1,
                                                          repeat_last_n=512,
-                                                         min_p=0.1, tfs_z=0.975, penalize_nl=False)
+                                                         min_p=0.1, tfs_z=0.95, penalize_nl=False,
+                                                         samplers=["tfs_z", "min_p", "temperature"],)
 
         # print("Message: " + result)
         agent.send_message_to_user(result)
@@ -217,9 +223,9 @@ class MemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.2,
+                                                        temperature=0.75, top_k=80, top_p=1.0, repeat_penalty=1.1,
                                                         repeat_last_n=512,
-                                                        min_p=0.1, tfs_z=0.975, penalize_nl=False)
+                                                        min_p=0.05, tfs_z=0.975, penalize_nl=False)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
@@ -249,9 +255,9 @@ class MemGptAgent:
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.75, top_k=0, top_p=0.85, repeat_penalty=1.2,
+                                                                temperature=0.75, top_k=80, top_p=1.0, repeat_penalty=1.1,
                                                                 repeat_last_n=512,
-                                                                min_p=0.1, tfs_z=0.975, penalize_nl=False)
+                                                                min_p=0.05, tfs_z=0.975, penalize_nl=False)
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                                 self.llama_cpp_agent.last_response, {})
             elif not isinstance(result[0], str):
