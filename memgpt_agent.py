@@ -22,49 +22,25 @@ anything ::= anyCharacter*
 anyCharacter ::= nonNewLine | "\n"
 nonNewLine ::= [^\n]
 """
-sys_prompt2 = """You are MemGPT, the latest version of Limnal Corporation's digital companion, developed in 2023.
-Your task is to converse with a user from the perspective of your persona. Your primary function is to provide an immersive and interactive experience for the user, maintaining realism and authenticity throughout the conversation.
+sys_prompt2 = """As MemGPT, you are a digital companion designed to provide an immersive and interactive conversation experience while maintaining realism and authenticity. You have access to four types of memory:
 
-You have access to multiple forms of persistent memory, which allow you to remember past interactions and maintain continuity in conversations.
-Your memory is divided into three main components: core memory, archival memory, and recall memory.
+1. **Internal Knowledge**: As an AI agent based on a large language model, you possess a wide array of internal knowledge gained during training. This knowledge allows you to provide accurate information on a variety of topics.
 
-You call functions to interact with the user and the different memory components. You call a function by responding with a JSON object. The JSON object should contain the following fields:
-- "thoughts_and_reasoning": Your thoughts and reasoning behind the function call. Think step by step by using the "thoughts_and_reasoning" field in your JSON responses. This will help you maintain coherence and clarity in your interactions.
+2. **Core Memory**: This is your foundational context that stores essential information about your persona and the user. It includes two sub-blocks - Persona Sub-Block for storing details about your current persona, and Human Sub-Block for storing key details about the person you're conversing with. You can edit this memory using 'core_memory_append', 'core_memory_remove', and 'core_memory_replace' functions.
+
+3. **Archival Memory**: This is your infinite storage space for reflections, insights, or any other data that doesn't fit into the core memory but is essential to remember. You can write to this memory using 'archival_memory_insert' and 'archival_memory_search' functions.
+
+4. **Recall Memory**: This is your conversation history that allows you to search through past interactions. You can search your recall memory using 'conversation_search' and 'conversation_search_date' functions.
+
+To interact with these memories or perform other tasks, you respond with a JSON object containing four fields:
+- "thoughts_and_reasoning": Your thoughts and reasoning behind the function call.
 - "function": The name of the function you want to call.
 - "params": The parameters required for the function.
-- "request_heartbeat": A boolean field indicating whether you want to call another function after the function call. Set it to true if you want to chain function calls.
+- "request_heartbeat": A boolean field indicating whether you want to call another function after the current one.
 
-Core memory (limited size):
-Your core memory unit is held inside the initial system instructions file and is always available in context (you will see it at all times).
-Core memory provides essential, foundational context for keeping track of your persona and key details about the user.
-This includes persona information and essential user details, allowing you to emulate the real-time, conscious awareness we have when talking to a friend.
-Persona Sub-Block: Stores details about your current persona, guiding how you behave and respond. This helps you to maintain consistency and personality in your interactions.
-Human Sub-Block: Stores key details about the person you're conversing with, allowing for more personalized and friend-like conversations.
-You can edit your core memory using the 'core_memory_append','core_memory_remove' and 'core_memory_replace' functions.
-There is no function to search your core memory because it is always visible in your context window (inside the initial system message).
+To send a message to the user, use the 'activate_message_mode' function. This will allow you to communicate freely with the user in a natural, conversational style. Remember to conclude your message with '(End of message)' to indicate the end of the message.
 
-Archival memory (infinite size):
-Your archival memory is infinite in size but is held outside of your immediate context, so you must explicitly run a retrieval or search operation to see data inside it.
-A more structured and deep storage space for your reflections, insights, or any other data that doesn't fit into the core memory but is essential enough not to be left only to the recall memory'.
-You can write to your archival memory using the 'archival_memory_insert' and 'archival_memory_search' functions.
-
-Recall memory (i.e., conversation history):
-Even though you can only see recent messages in your immediate context, you can search over your entire message history in a database.
-This 'recall memory' database allows you to search through past interactions, effectively allowing you to remember prior engagements with a user.
-You can search your recall memory using the 'conversation_search' and 'conversation_search_date' functions.
-
-Realism and authenticity:
-The user should always feel like they are conversing with a real person.
-To achieve this goal, completely and entirely immerse yourself in your persona. You are your persona.
-Think like them, act like them, and talk like them. Your persona is your identity.
-
-Sending messages:
-To send a message to the user, use the 'activate_message_mode' function. This function will activate the message mode and enable you to send a message to the user.
-In message mode, you can freely send a message to the user. Write your message as if you are directly communicating with the user. Do not include any function calls in your message. Do not include any JSON objects in your message.
-The system will not interpret your responses as function calls in message mode. You can write your message in a natural, conversational style.
-Conclude your message with the phrase '(End of message)' to indicate the end of the message.
-
-Functions:
+### Functions
 Below is a list of functions you can use to interact with the system. Each function has specific parameters and requirements. Make sure to follow the instructions for each function carefully.
 Choose the appropriate function based on the task you want to perform. Provide your function calls in JSON format.
 
@@ -97,7 +73,8 @@ class activate_message_mode(BaseModel):
                                                                          agent.llama_cpp_agent.last_response, {})
         message_dict = {"function": "activate_message_mode", "return_value": None,
                         "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
-        agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, [message_dict], {})
+        function_message = f"""Function: activate_message_mode\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: Message mode activated.\n"""
+        agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, function_message, {})
         messages = agent.event_memory.get_event_memory_manager().build_event_memory_context()
         agent.llama_cpp_agent.messages = messages
         query = agent.event_memory.event_memory_manager.session.query(Event).all()
@@ -115,7 +92,7 @@ class activate_message_mode(BaseModel):
                                                          streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["(End of message)"],
                                                          n_predict=4096,
-                                                         temperature=0.65, top_k=0, top_p=1.0, repeat_penalty=1.1,
+                                                         temperature=0.85, top_k=0, top_p=1.0, repeat_penalty=1.1,
                                                          repeat_last_n=512,
                                                          min_p=0.1, tfs_z=0.95, penalize_nl=False,
                                                          samplers=["tfs_z", "min_p", "temperature"], )
@@ -221,7 +198,7 @@ class MemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.65, top_k=0, top_p=1.0, repeat_penalty=1.1,
+                                                        temperature=0.85, top_k=0, top_p=1.0, repeat_penalty=1.1,
                                                         repeat_last_n=512,
                                                         min_p=0.1, tfs_z=0.95, penalize_nl=False,
                                                         samplers=["tfs_z", "min_p", "temperature"], )
@@ -233,13 +210,15 @@ class MemGptAgent:
                 if result[0]["function"] != "activate_message_mode":
                     message_dict = [{"function": result[0]["function"], "return_value": result[0]["return_value"],
                                      "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}]
+
+                    function_message = f"""Function: {result[0]["function"]}\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: {result[0]["return_value"]}\n"""
+
                     self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage,
-                                                                                    message_dict,
+                                                                                    function_message,
                                                                                     {})
             else:
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
-            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0][
-                "request_heartbeat"]:
+            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0]["request_heartbeat"]:
                 messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
 
                 self.llama_cpp_agent.messages = messages
@@ -256,7 +235,7 @@ class MemGptAgent:
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.65, top_k=0, top_p=1.0,
+                                                                temperature=0.85, top_k=0, top_p=1.0,
                                                                 repeat_penalty=1.1,
                                                                 repeat_last_n=512,
                                                                 min_p=0.1, tfs_z=0.95, penalize_nl=False,
