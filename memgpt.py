@@ -125,15 +125,15 @@ main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1
 
 SYS_PROMPT_START_CHATML = """### Instructions:\n"""
 SYS_PROMPT_END_CHATML = """\n"""
-USER_PROMPT_START_CHATML = """### Input:\n"""
+USER_PROMPT_START_CHATML = """### User:\n"""
 USER_PROMPT_END_CHATML = """\n"""
-ASSISTANT_PROMPT_START_CHATML = """### Response:\n"""
+ASSISTANT_PROMPT_START_CHATML = """### Companion:\n"""
 ASSISTANT_PROMPT_END_CHATML = """\n"""
-ASSISTANT_PROMPT_START2_CHATML = """### Response:\n"""
+ASSISTANT_PROMPT_START2_CHATML = """### Companion Function Call:\n"""
 ASSISTANT_PROMPT_END2_CHATML = """\n"""
-FUNCTION_PROMPT_START_CHATML = """### Input:\n"""
+FUNCTION_PROMPT_START_CHATML = """### Function Call Result:\n"""
 FUNCTION_PROMPT_END_CHATML = """\n"""
-DEFAULT_CHATML_STOP_SEQUENCES = ["### Input:", "</s>", "### Response:", "(End of message)", "### MemGPT ###"]
+DEFAULT_CHATML_STOP_SEQUENCES = ["### User:", "</s>", "### Response:", "(End of message)", "### MemGPT ###"]
 
 custom_chat_ml_formatter = MessagesFormatter("", SYS_PROMPT_START_CHATML, SYS_PROMPT_END_CHATML,
                                              USER_PROMPT_START_CHATML,
