@@ -73,7 +73,7 @@ class activate_message_mode(BaseModel):
                                                                          agent.llama_cpp_agent.last_response, {})
         message_dict = {"function": "activate_message_mode", "return_value": None,
                         "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
-        function_message = f"""Function: activate_message_mode\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: Message mode activated.\n"""
+        function_message = f"""Function: activate_message_mode\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: Message mode activated."""
         agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, function_message, {})
         messages = agent.event_memory.get_event_memory_manager().build_event_memory_context()
         agent.llama_cpp_agent.messages = messages
@@ -92,7 +92,7 @@ class activate_message_mode(BaseModel):
                                                          streaming_callback=agent.streaming_callback,
                                                          additional_stop_sequences=["(End of message)"],
                                                          n_predict=4096,
-                                                         temperature=0.85, top_k=0, top_p=1.0, repeat_penalty=1.1,
+                                                         temperature=0.4, top_k=0, top_p=1.0, repeat_penalty=1.1,
                                                          repeat_last_n=512,
                                                          min_p=0.1, tfs_z=0.95, penalize_nl=False,
                                                          samplers=["tfs_z", "min_p", "temperature"], )
@@ -198,7 +198,7 @@ class MemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.85, top_k=0, top_p=1.0, repeat_penalty=1.1,
+                                                        temperature=0.4, top_k=0, top_p=1.0, repeat_penalty=1.1,
                                                         repeat_last_n=512,
                                                         min_p=0.1, tfs_z=0.95, penalize_nl=False,
                                                         samplers=["tfs_z", "min_p", "temperature"], )
@@ -211,7 +211,7 @@ class MemGptAgent:
                     message_dict = [{"function": result[0]["function"], "return_value": result[0]["return_value"],
                                      "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}]
 
-                    function_message = f"""Function: {result[0]["function"]}\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: {result[0]["return_value"]}\n"""
+                    function_message = f"""Function: {result[0]["function"]}\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: {result[0]["return_value"]}"""
 
                     self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage,
                                                                                     function_message,
@@ -235,7 +235,7 @@ class MemGptAgent:
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.85, top_k=0, top_p=1.0,
+                                                                temperature=0.4, top_k=0, top_p=1.0,
                                                                 repeat_penalty=1.1,
                                                                 repeat_last_n=512,
                                                                 min_p=0.1, tfs_z=0.95, penalize_nl=False,
