@@ -123,26 +123,30 @@ class MessagesFormatter:
 
 main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1:8080/completion")
 
-SYS_PROMPT_START_CHATML = """<|im_start|>system\n"""
-SYS_PROMPT_END_CHATML = """<|im_end|>\n"""
-USER_PROMPT_START_CHATML = """<|im_start|>user\n"""
-USER_PROMPT_END_CHATML = """<|im_end|>\n"""
-ASSISTANT_PROMPT_START_CHATML = """<|im_start|>assistant\n"""
-ASSISTANT_PROMPT_END_CHATML = """<|im_end|>\n"""
-FUNCTION_PROMPT_START_CHATML = """<|im_start|>tool\n"""
-FUNCTION_PROMPT_END_CHATML = """<|im_end|>\n"""
-DEFAULT_CHATML_STOP_SEQUENCES = ["<|im_end|>", "</s>", "</assistant", "*Message mode deactivated.*"]
+SYS_PROMPT_START_CHATML = """### Instructions:\n"""
+SYS_PROMPT_END_CHATML = """\n"""
+USER_PROMPT_START_CHATML = """### Input:\n"""
+USER_PROMPT_END_CHATML = """\n"""
+ASSISTANT_PROMPT_START_CHATML = """### Response:\n"""
+ASSISTANT_PROMPT_END_CHATML = """\n"""
+ASSISTANT_PROMPT_START2_CHATML = """### Response:\n"""
+ASSISTANT_PROMPT_END2_CHATML = """\n"""
+FUNCTION_PROMPT_START_CHATML = """### Input:\n"""
+FUNCTION_PROMPT_END_CHATML = """\n"""
+DEFAULT_CHATML_STOP_SEQUENCES = ["### Input:", "</s>", "### Response:", "(End of message)", "### MemGPT ###"]
 
 custom_chat_ml_formatter = MessagesFormatter("", SYS_PROMPT_START_CHATML, SYS_PROMPT_END_CHATML,
                                              USER_PROMPT_START_CHATML,
                                              USER_PROMPT_END_CHATML, ASSISTANT_PROMPT_START_CHATML,
-                                             ASSISTANT_PROMPT_END_CHATML, ASSISTANT_PROMPT_START_CHATML,
-                                             ASSISTANT_PROMPT_END_CHATML, False, DEFAULT_CHATML_STOP_SEQUENCES,
+                                             ASSISTANT_PROMPT_END_CHATML, ASSISTANT_PROMPT_START2_CHATML,
+                                             ASSISTANT_PROMPT_END2_CHATML, False, DEFAULT_CHATML_STOP_SEQUENCES,
                                              False,
                                              FUNCTION_PROMPT_START_CHATML, FUNCTION_PROMPT_END_CHATML)
 
 mem_gpt_agent = MemGptAgent(main_model, debug_output=True, core_memory_file="core_memory.json",
-                            custom_messages_formatter=custom_chat_ml_formatter)
+                            custom_messages_formatter=custom_chat_ml_formatter,
+                            # messages_formatter_type=MessagesFormatterType.MIXTRAL
+                            )
 
 while True:
     user_input = input(">")
