@@ -144,8 +144,8 @@ custom_chat_ml_formatter = MessagesFormatter("", SYS_PROMPT_START_CHATML, SYS_PR
                                              FUNCTION_PROMPT_START_CHATML, FUNCTION_PROMPT_END_CHATML)
 
 mem_gpt_agent = MemGptAgent(main_model, debug_output=True, core_memory_file="core_memory.json",
-                            custom_messages_formatter=custom_chat_ml_formatter,
-                            # messages_formatter_type=MessagesFormatterType.MIXTRAL
+                            # custom_messages_formatter=custom_chat_ml_formatter,
+                            messages_formatter_type=MessagesFormatterType.CHATML
                             )
 
 while True:

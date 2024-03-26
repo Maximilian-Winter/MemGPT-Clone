@@ -71,8 +71,6 @@ class activate_message_mode(BaseModel):
         agent.llama_cpp_agent.messages_formatter.USE_FUNCTION_CALL_END = False
         agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                          agent.llama_cpp_agent.last_response, {})
-        message_dict = {"function": "activate_message_mode", "return_value": None,
-                        "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
         function_message = f"""Function: activate_message_mode\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: Message mode activated."""
         agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, function_message, {})
         messages = agent.event_memory.get_event_memory_manager().build_event_memory_context()
@@ -86,16 +84,13 @@ class activate_message_mode(BaseModel):
              "ckv_count": agent.retrieval_memory.retrieval_memory.collection.count(),
              "imb_count": len(query)}).strip()
 
-        result = agent.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
-                                                         # function_tool_registry=agent.function_tool_registry,
-                                                         # grammar=message_grammar,
-                                                         streaming_callback=agent.streaming_callback,
-                                                         additional_stop_sequences=["(End of message)"],
-                                                         n_predict=4096,
-                                                         temperature=0.4, top_k=0, top_p=1.0, repeat_penalty=1.1,
-                                                         repeat_last_n=512,
-                                                         min_p=0.1, tfs_z=0.95, penalize_nl=False,
-                                                         samplers=["tfs_z", "min_p", "temperature"], )
+        result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
+                                                        streaming_callback=agent.streaming_callback,
+                                                        additional_stop_sequences=["<|endoftext|>"],
+                                                        n_predict=1024,
+                                                        temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
+                                                        repeat_last_n=512,
+                                                        min_p=0.0, tfs_z=1.0, penalize_nl=False)
 
         # print("Message: " + result)
         agent.send_message_to_user(result)
@@ -198,18 +193,15 @@ class MemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.4, top_k=0, top_p=1.0, repeat_penalty=1.1,
+                                                        temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
                                                         repeat_last_n=512,
-                                                        min_p=0.1, tfs_z=0.95, penalize_nl=False,
-                                                        samplers=["tfs_z", "min_p", "temperature"], )
+                                                        min_p=0.0, tfs_z=1.0, penalize_nl=False)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
         while True:
             if not isinstance(result[0], str):
                 if result[0]["function"] != "activate_message_mode":
-                    message_dict = [{"function": result[0]["function"], "return_value": result[0]["return_value"],
-                                     "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}]
 
                     function_message = f"""Function: {result[0]["function"]}\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: {result[0]["return_value"]}"""
 
@@ -235,11 +227,9 @@ class MemGptAgent:
                                                                 function_tool_registry=self.function_tool_registry,
                                                                 additional_stop_sequences=["<|endoftext|>"],
                                                                 n_predict=1024,
-                                                                temperature=0.4, top_k=0, top_p=1.0,
-                                                                repeat_penalty=1.1,
+                                                                temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
                                                                 repeat_last_n=512,
-                                                                min_p=0.1, tfs_z=0.95, penalize_nl=False,
-                                                                samplers=["tfs_z", "min_p", "temperature"], )
+                                                                min_p=0.0, tfs_z=1.0, penalize_nl=False)
                 self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                                 self.llama_cpp_agent.last_response, {})
             elif not isinstance(result[0], str):
