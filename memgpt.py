@@ -120,9 +120,6 @@ class MessagesFormatter:
         else:
             return formatted_messages + self.USER_PROMPT_START, "user"
 
-
-main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1:8080/completion")
-
 SYS_PROMPT_START_CHATML = """### Instructions:\n"""
 SYS_PROMPT_END_CHATML = """\n"""
 USER_PROMPT_START_CHATML = """### Input:\n"""
@@ -142,6 +139,9 @@ custom_chat_ml_formatter = MessagesFormatter("", SYS_PROMPT_START_CHATML, SYS_PR
                                              ASSISTANT_PROMPT_END2_CHATML, False, DEFAULT_CHATML_STOP_SEQUENCES,
                                              False,
                                              FUNCTION_PROMPT_START_CHATML, FUNCTION_PROMPT_END_CHATML)
+
+main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1:8080/completion")
+
 
 mem_gpt_agent = MemGptAgent(main_model, debug_output=True, core_memory_file="core_memory.json",
                             # custom_messages_formatter=custom_chat_ml_formatter,
