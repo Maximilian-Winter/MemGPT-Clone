@@ -68,11 +68,11 @@ class activate_message_mode(BaseModel):
     """
 
     def run(self, agent):
-        agent.llama_cpp_agent.messages_formatter.USE_FUNCTION_CALL_END = False
         agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                          agent.llama_cpp_agent.last_response, {})
         function_message = f"""Function: activate_message_mode\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: Message mode activated."""
-        agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, function_message, {})
+        agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, function_message,
+                                                                         {})
         messages = agent.event_memory.get_event_memory_manager().build_event_memory_context()
         agent.llama_cpp_agent.messages = messages
         query = agent.event_memory.event_memory_manager.session.query(Event).all()
@@ -84,13 +84,13 @@ class activate_message_mode(BaseModel):
              "ckv_count": agent.retrieval_memory.retrieval_memory.collection.count(),
              "imb_count": len(query)}).strip()
 
-        result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
-                                                        streaming_callback=agent.streaming_callback,
-                                                        additional_stop_sequences=["<|endoftext|>"],
-                                                        n_predict=1024,
-                                                        temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
-                                                        repeat_last_n=512,
-                                                        min_p=0.0, tfs_z=1.0, penalize_nl=False)
+        result = agent.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
+                                                         streaming_callback=agent.streaming_callback,
+                                                         additional_stop_sequences=["<|endoftext|>"],
+                                                         n_predict=1024,
+                                                         temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
+                                                         repeat_last_n=512,
+                                                         min_p=0.0, tfs_z=1.0, penalize_nl=False)
 
         # print("Message: " + result)
         agent.send_message_to_user(result)
@@ -172,10 +172,27 @@ class MemGptAgent:
         self.is_first_message = True
 
     def get_response(self, message: str):
-        # message_dict = {"event": "Player-Message", "message": message, "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
-        # message = json.dumps(message_dict, indent=2)
-        self.llama_cpp_agent.messages_formatter.USE_FUNCTION_CALL_END = True
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage, message, {})
+
+        result = self.intern_get_response()
+
+        while True:
+            if not isinstance(result[0], str):
+                if result[0]["function"] != "activate_message_mode":
+                    function_message = f"""Function: {result[0]["function"]}\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: {result[0]["return_value"]}"""
+
+                    self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage,
+                                                                                    function_message,
+                                                                                    {})
+            else:
+                self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
+                result = self.intern_get_response()
+            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0]["request_heartbeat"]:
+                result = self.intern_get_response()
+            else:
+                break
+
+    def intern_get_response(self):
         messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
         self.llama_cpp_agent.messages = messages
         query = self.event_memory.event_memory_manager.session.query(Event).all()
@@ -199,43 +216,7 @@ class MemGptAgent:
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
-        while True:
-            if not isinstance(result[0], str):
-                if result[0]["function"] != "activate_message_mode":
-
-                    function_message = f"""Function: {result[0]["function"]}\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: {result[0]["return_value"]}"""
-
-                    self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage,
-                                                                                    function_message,
-                                                                                    {})
-            else:
-                self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
-            if not isinstance(result[0], str) and result[0]["request_heartbeat"] is not None and result[0]["request_heartbeat"]:
-                messages = self.event_memory.get_event_memory_manager().build_event_memory_context()
-
-                self.llama_cpp_agent.messages = messages
-                system_prompt = self.system_prompt_template.generate_prompt(
-                    {"documentation": self.function_tool_registry.get_documentation().strip(),
-                     "last_modified": self.core_memory.get_core_memory_manager().last_modified,
-                     "iam_content": self.core_memory.get_core_memory_manager().build_core_memory_context(),
-                     "current_date_time": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S"),
-                     "ckv_count": self.retrieval_memory.retrieval_memory.collection.count(),
-                     "imb_count": len(query)}).strip()
-
-                result = self.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
-                                                                streaming_callback=self.streaming_callback,
-                                                                function_tool_registry=self.function_tool_registry,
-                                                                additional_stop_sequences=["<|endoftext|>"],
-                                                                n_predict=1024,
-                                                                temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
-                                                                repeat_last_n=512,
-                                                                min_p=0.0, tfs_z=1.0, penalize_nl=False)
-                self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
-                                                                                self.llama_cpp_agent.last_response, {})
-            elif not isinstance(result[0], str):
-                break
-            else:
-                self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, result, {})
+        return result
 
     def send_message_to_user(self, message: str):
         """
