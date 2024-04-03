@@ -147,7 +147,7 @@ mem_gpt_agent = MemGptAgent(main_model, debug_output=True, core_memory_file="cor
                             # custom_messages_formatter=custom_chat_ml_formatter,
                             messages_formatter_type=MessagesFormatterType.CHATML
                             )
-
+mem_gpt_agent.intern_get_response()
 while True:
     user_input = input(">")
 
