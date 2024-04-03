@@ -40,13 +40,6 @@ To interact with these memories or perform other tasks, you respond with a JSON 
 
 To send a message to the user, use the 'activate_message_mode' function. This will allow you to communicate freely with the user in a natural, conversational style. Remember to conclude your message with '(End of message)' to indicate the end of the message.
 
-### Functions:
-Below is a list of functions you can use to interact with the system. Each function has specific parameters and requirements. Make sure to follow the instructions for each function carefully.
-Choose the appropriate function based on the task you want to perform. Provide your function calls in JSON format.
-
-Available functions:
-{documentation}
-
 Base instructions are finished.
 After the system message, you are going to feel, think, and act as your persona, using your core memory as a reference.
 
@@ -59,6 +52,12 @@ last modified: {last_modified}
 
 {iam_content}
 
+### Functions:
+Below is a list of functions you can use to interact with the system. Each function has specific parameters and requirements. Make sure to follow the instructions for each function carefully.
+Choose the appropriate function based on the task you want to perform. Provide your function calls in JSON format.
+
+Available functions:
+{documentation}
 """.strip()
 
 
@@ -70,7 +69,7 @@ class activate_message_mode(BaseModel):
     def run(self, agent):
         agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                          agent.llama_cpp_agent.last_response, {})
-        function_message = f"""Function: "activate_message_mode"\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: Message mode activated."""
+        function_message = f"""Function: "activate_message_mode"\nReturn Value: Message mode activated.\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}"""
         agent.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, function_message,
                                                                          {})
         messages = agent.event_memory.get_event_memory_manager().build_event_memory_context()
@@ -86,15 +85,27 @@ class activate_message_mode(BaseModel):
 
         result = agent.llama_cpp_agent.get_chat_response(system_prompt=system_prompt,
                                                          streaming_callback=agent.streaming_callback,
-                                                         additional_stop_sequences=["(End of message)", "<|endoftext|>"],
+                                                         additional_stop_sequences=["(End of message)",
+                                                                                    "<|endoftext|>"],
                                                          n_predict=1024,
-                                                         temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
-                                                         repeat_last_n=512,
-                                                         min_p=0.0, tfs_z=1.0, penalize_nl=False,
-                                                         prompt_suffix="\nWrite message in plain text format:")
+                                                         temperature=0.75, top_k=0, top_p=1.0, repeat_penalty=1.1,
+                                                         repeat_last_n=64,
+                                                         min_p=0.1, tfs_z=0.97, penalize_nl=False,
+                                                         prompt_suffix="\nWrite message in plain text format:\n")
 
         # print("Message: " + result)
         agent.send_message_to_user(result)
+        return "Message mode activated."
+
+
+class send_message(BaseModel):
+    """
+    Sends a message to the user.
+    """
+    message: str = Field(..., title="Message", description="The message to be sent to the user.")
+
+    def run(self, agent):
+        agent.send_message_to_user(self.message)
         return "Message mode activated."
 
 
@@ -158,6 +169,25 @@ class MemGptAgent:
             self.event_memory = AgentEventMemory(event_queue_file=event_queue_file)
         else:
             self.event_memory = AgentEventMemory()
+            msg_1 = """Event Type: System
+Content: System activated.
+Timestamp: 03/04/2024, 03:35:00"""
+            msg_2 = """{
+  "thoughts_and_reasoning": "My system got activated. Writing initial message.",
+  "function":"activate_message_mode",
+  "arguments":{}
+}"""
+            msg_3 = """Function: "activate_message_mode"
+Return Value: Message mode activated.
+Timestamp: 03/04/2024, 03:35:10"""
+
+            msg_4 = """Write message in plain text format:
+Hello World!"""
+            self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage,
+                                                                            msg_1, {})
+            #self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage, msg_2, {})
+            #self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage, msg_3, {})
+            #self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage, msg_4, {})
 
         self.retrieval_memory = AgentRetrievalMemory()
 
@@ -173,15 +203,19 @@ class MemGptAgent:
         self.is_first_message = True
 
     def get_response(self, message: str):
-        message = {"event_type": EventType.UserMessage.value, "content": message}
-        self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage, json.dumps(message, indent=2), {})
+        message = f"""Event Type: User
+Content: {message}
+Timestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}"""
+        # message = {"event_type": "user_message", "content": message, "timestamp": datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
+        self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.UserMessage,
+                                                                        message, {})
 
         result = self.intern_get_response()
 
         while True:
             if not isinstance(result[0], str):
                 if result[0]["function"] != "activate_message_mode":
-                    function_message = f"""Function: "{result[0]["function"]}"\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}\nReturn Value: {result[0]["return_value"]}"""
+                    function_message = f"""Function: "{result[0]["function"]}"\nReturn Value: {result[0]["return_value"]}\nTimestamp: {datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}"""
 
                     self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.FunctionMessage,
                                                                                     function_message,
@@ -212,9 +246,9 @@ class MemGptAgent:
                                                         function_tool_registry=self.function_tool_registry,
                                                         additional_stop_sequences=["<|endoftext|>"],
                                                         n_predict=1024,
-                                                        temperature=0.7, top_k=0, top_p=1.0, repeat_penalty=1.2,
-                                                        repeat_last_n=512,
-                                                        min_p=0.0, tfs_z=1.0, penalize_nl=False)
+                                                        temperature=0.75, top_k=0, top_p=1.0, repeat_penalty=1.1,
+                                                        repeat_last_n=64,
+                                                        min_p=0.1, tfs_z=0.97, penalize_nl=False)
         self.event_memory.get_event_memory_manager().add_event_to_queue(EventType.AgentMessage,
                                                                         self.llama_cpp_agent.last_response, {})
 
