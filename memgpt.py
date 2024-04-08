@@ -126,7 +126,7 @@ USER_PROMPT_START_CHATML = """### Input:\n"""
 USER_PROMPT_END_CHATML = """\n"""
 ASSISTANT_PROMPT_START_CHATML = """### Response:\n"""
 ASSISTANT_PROMPT_END_CHATML = """\n"""
-ASSISTANT_PROMPT_START2_CHATML = """### Function Call:\n"""
+ASSISTANT_PROMPT_START2_CHATML = """### Response:\n"""
 ASSISTANT_PROMPT_END2_CHATML = """\n"""
 FUNCTION_PROMPT_START_CHATML = """### Function Call Result:\n"""
 FUNCTION_PROMPT_END_CHATML = """\n"""
@@ -144,10 +144,10 @@ main_model = LlamaCppEndpointSettings(completions_endpoint_url="http://127.0.0.1
 
 
 mem_gpt_agent = MemGptAgent(main_model, debug_output=True, core_memory_file="core_memory.json",
-                            # custom_messages_formatter=custom_chat_ml_formatter,
+                            #custom_messages_formatter=custom_chat_ml_formatter,
                             messages_formatter_type=MessagesFormatterType.CHATML
                             )
-mem_gpt_agent.intern_get_response()
+
 while True:
     user_input = input(">")
 
